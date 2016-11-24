@@ -12,13 +12,17 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
+import org.opencv.core.Core;
 import org.opencv.core.CvException;
 import org.opencv.core.Mat;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
+import org.opencv.imgproc.Imgproc;
+import org.opencv.video.Video;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.hardware.Camera.Size;
 import android.os.Bundle;
 import android.os.Environment;
@@ -37,6 +41,8 @@ import android.widget.Toast;
 public class MainActivity extends Activity implements CvCameraViewListener2, OnTouchListener {
 
     private static final String TAG = "MainActivity";
+    public static final String LOG_TAG = "MainActivity";
+
     static {
         System.loadLibrary("opencv_java3");
     }
@@ -48,7 +54,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2, OnT
     private MenuItem[] mResolutionMenuItems;
     private SubMenu mResolutionMenu;
     private Button mCaptureButton;
-    private boolean savePicture;
+
+    private BgdSubtractor bgdSubtractor=new BgdSubtractor();
+    private Mat frame=new Mat();
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -66,6 +74,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, OnT
             }
         }
     };
+    private int frameCount = 0;
 
     public MainActivity(){
         Log.i(TAG, "Instantiated new " + this.getClass());
@@ -84,11 +93,16 @@ public class MainActivity extends Activity implements CvCameraViewListener2, OnT
         mOpenCvCameraView.setCameraIndex(1);
         mOpenCvCameraView.setCvCameraViewListener(this);
         mCaptureButton = (Button) findViewById(R.id.captureButton);
-        savePicture = false;
         mCaptureButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                savePicture = true;
+                Log.i(TAG,"onTouch event");
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
+                String currentDateandTime = sdf.format(new Date());
+                String fileName = Environment.getExternalStorageDirectory().getPath() +
+                        "/sample_picture_" + currentDateandTime + ".jpg";
+                mOpenCvCameraView.takePicture(fileName);
+                Toast.makeText(mActivity, fileName + " saved", Toast.LENGTH_SHORT).show();
 //                return false;
             }
         });
@@ -96,6 +110,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2, OnT
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
 
         mOpenCvCameraView.setCvCameraViewListener(this);
+
+        bgdSubtractor.setBackground(imgId2Mat(R.drawable.background));
     }
 
     @Override
@@ -133,12 +149,21 @@ public class MainActivity extends Activity implements CvCameraViewListener2, OnT
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         //Rotation from horizontal to vertical
-        Mat cFrame = inputFrame.rgba();
-//        Log.i("Hilda", "width: " + cFrame.width() + " height: " +cFrame.height() );
-//        if(savePicture){
-//            savePicture(cFrame);
-//        }
-        return cFrame;
+
+        //checkFrameCount();
+
+        if(inputFrame.rgba().empty()) return inputFrame.rgba();
+
+        Core.flip(inputFrame.rgba(),frame,0);
+
+        bgdSubtractor.setInput(frame);
+        Mat outFrame = bgdSubtractor.getBlendImage();
+
+        //Mat outFrame = bgdSubtractor.getBackground();
+        System.gc();
+
+        return outFrame;
+
     }
 
     public void savePicture(Mat outputFrame){
@@ -169,7 +194,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2, OnT
         }
 
         Toast.makeText(mActivity, fileName + " saved", Toast.LENGTH_SHORT).show();
-        savePicture = false;
 
     }
 
@@ -240,6 +264,28 @@ public class MainActivity extends Activity implements CvCameraViewListener2, OnT
         mOpenCvCameraView.takePicture(fileName);
         Toast.makeText(this, fileName + " saved", Toast.LENGTH_SHORT).show();
         return false;
+    }
+
+
+    public Mat imgId2Mat(int imgId)
+    {
+
+        Bitmap bmpIn= BitmapFactory.decodeResource(getResources(), imgId);
+        Mat mat=new Mat();
+        Utils.bitmapToMat(bmpIn, mat);
+
+        return mat;
+    }
+
+    public void checkFrameCount()
+    {
+        if(frameCount == 300) {
+            frameCount =0;
+            bgdSubtractor= new BgdSubtractor();
+        }
+        else
+            frameCount++;
+
     }
 }
 

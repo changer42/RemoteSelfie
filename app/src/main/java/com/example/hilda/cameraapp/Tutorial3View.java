@@ -70,8 +70,8 @@ public class Tutorial3View extends JavaCameraView implements PictureCallback {
 
         Log.i(TAG, "Saving a bitmap to file");
         // The camera preview was automatically stopped. Start it again.
-        mCamera.startPreview();
-        mCamera.setPreviewCallback(this);
+        //mCamera.startPreview();
+        //mCamera.setPreviewCallback(this);
 
         // Write the image in a file (in jpeg format)
         try {
