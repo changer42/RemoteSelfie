@@ -142,11 +142,25 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
 
                 if (sizes != null) {
                     /* Select the size that fits surface considering maximum size allowed */
+                    Log.d(TAG, "surface width: " + width + "surface height: " + height);
                     Size frameSize = calculateCameraFrameSize(sizes, new JavaCameraSizeAccessor(), width, height);
+/*
+                    Size frameSize = getOptimalPreviewSize(sizes, width, height);
+                    float ratio;
+                    if(frameSize.height >= frameSize.width)
+                        ratio = (float) frameSize.height / (float) frameSize.width;
+                    else
+                        ratio = (float) frameSize.width / (float) frameSize.height;
 
+                    // One of these methods should be used, second method squishes preview slightly
+                    setMeasuredDimension(width, (int) (width * ratio));
+                    //setMeasuredDimension((int) (width * ratio), height);
+*/
                     params.setPreviewFormat(ImageFormat.NV21);
                     Log.d(TAG, "Set preview size to " + Integer.valueOf((int)frameSize.width) + "x" + Integer.valueOf((int)frameSize.height));
+
                     params.setPreviewSize((int)frameSize.width, (int)frameSize.height);
+
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH && !android.os.Build.MODEL.equals("GT-I9100"))
                         params.setRecordingHint(true);
@@ -195,6 +209,8 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                     } else
                        mCamera.setPreviewDisplay(null);
 
+                    mCamera.setDisplayOrientation(90);
+
                     /* Finally we are ready to start the preview */
                     Log.d(TAG, "startPreview");
                     mCamera.startPreview();
@@ -209,6 +225,8 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
 
         return result;
     }
+
+    //=========================================================================================================
 
     protected void releaseCamera() {
         synchronized (this) {

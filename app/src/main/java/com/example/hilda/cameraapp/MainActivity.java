@@ -1,31 +1,54 @@
 package com.example.hilda.cameraapp;
 
-import android.app.Activity;
-import android.opengl.Matrix;
-import android.os.Bundle;
-import android.util.Log;
-import android.view.MenuItem;
-import android.view.SurfaceView;
-import android.view.WindowManager;
+import java.io.FileOutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.ListIterator;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
+import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
+import org.opencv.core.CvException;
 import org.opencv.core.Mat;
-import org.opencv.core.Point;
-import org.opencv.core.Scalar;
-import org.opencv.imgproc.Imgproc;
+import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 
-public class MainActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2 {
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.graphics.Bitmap;
+import android.hardware.Camera.Size;
+import android.os.Bundle;
+import android.os.Environment;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.MotionEvent;
+import android.view.SubMenu;
+import android.view.SurfaceView;
+import android.view.View;
+import android.view.View.OnTouchListener;
+import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.Toast;
+
+public class MainActivity extends Activity implements CvCameraViewListener2, OnTouchListener {
 
     private static final String TAG = "MainActivity";
     static {
         System.loadLibrary("opencv_java3");
     }
-    private CameraBridgeViewBase mOpenCvCameraView;
-    private boolean mIsJavaCamera = true;
-    private MenuItem mItemSwitchCamera = null;
+    private Activity mActivity = this;
+    private Tutorial3View mOpenCvCameraView;
+    private List<Size> mResolutionList;
+    private MenuItem[] mEffectMenuItems;
+    private SubMenu mColorEffectsMenu;
+    private MenuItem[] mResolutionMenuItems;
+    private SubMenu mResolutionMenu;
+    private Button mCaptureButton;
+    private boolean savePicture;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -48,6 +71,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
         Log.i(TAG, "Instantiated new " + this.getClass());
     }
 
+    /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "called onCreate");
@@ -56,7 +80,18 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
 
         setContentView(R.layout.activity_main);
 
-        mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.surfaceView);
+        mOpenCvCameraView = (Tutorial3View) findViewById(R.id.tutorial3_activity_java_surface_view);
+        mOpenCvCameraView.setCameraIndex(1);
+        mOpenCvCameraView.setCvCameraViewListener(this);
+        mCaptureButton = (Button) findViewById(R.id.captureButton);
+        savePicture = false;
+        mCaptureButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                savePicture = true;
+//                return false;
+            }
+        });
 
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
 
@@ -90,25 +125,124 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
             mOpenCvCameraView.disableView();
     }
 
-
-    @Override
     public void onCameraViewStarted(int width, int height) {
-
     }
 
-    @Override
     public void onCameraViewStopped() {
-
     }
 
-    @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+        //Rotation from horizontal to vertical
         Mat cFrame = inputFrame.rgba();
-        Imgproc.circle(cFrame, new Point(200, 300), 20, new Scalar(1.0, 1.0, 0.0, 1.0));
-
+//        Log.i("Hilda", "width: " + cFrame.width() + " height: " +cFrame.height() );
+//        if(savePicture){
+//            savePicture(cFrame);
+//        }
         return cFrame;
     }
+
+    public void savePicture(Mat outputFrame){
+        Log.i(TAG,"onClick event");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
+        String currentDateandTime = sdf.format(new Date());
+        String fileName = Environment.getExternalStorageDirectory().getPath() +
+                "/remote_selfies_" + currentDateandTime + ".jpg";
+        mOpenCvCameraView.takePicture(fileName);
+
+
+        Bitmap bmp = null;
+        try {
+            bmp = Bitmap.createBitmap(outputFrame.cols(), outputFrame.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(outputFrame, bmp);
+        } catch (CvException e) {
+            Log.d(TAG, e.getMessage());
+        }
+
+        try {
+            FileOutputStream fos = new FileOutputStream(fileName);
+            bmp.compress(Bitmap.CompressFormat.JPEG, 90, fos);
+            fos.flush();
+            fos.close();
+
+        } catch (java.io.IOException e) {
+            Log.e("SavePicture", "Exception in photoCallback", e);
+        }
+
+        Toast.makeText(mActivity, fileName + " saved", Toast.LENGTH_SHORT).show();
+        savePicture = false;
+
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        List<String> effects = mOpenCvCameraView.getEffectList();
+
+        if (effects == null) {
+            Log.e(TAG, "Color effects are not supported by device!");
+            return true;
+        }
+
+        mColorEffectsMenu = menu.addSubMenu("Color Effect");
+        mEffectMenuItems = new MenuItem[effects.size()];
+
+        int idx = 0;
+        ListIterator<String> effectItr = effects.listIterator();
+        while(effectItr.hasNext()) {
+            String element = effectItr.next();
+            mEffectMenuItems[idx] = mColorEffectsMenu.add(1, idx, Menu.NONE, element);
+            idx++;
+        }
+
+        mResolutionMenu = menu.addSubMenu("Resolution");
+        mResolutionList = mOpenCvCameraView.getResolutionList();
+        mResolutionMenuItems = new MenuItem[mResolutionList.size()];
+
+        ListIterator<Size> resolutionItr = mResolutionList.listIterator();
+        idx = 0;
+        while(resolutionItr.hasNext()) {
+            Size element = resolutionItr.next();
+            mResolutionMenuItems[idx] = mResolutionMenu.add(2, idx, Menu.NONE,
+                    Integer.valueOf(element.width).toString() + "x" + Integer.valueOf(element.height).toString());
+            idx++;
+        }
+
+        return true;
+    }
+
+    public boolean onOptionsItemSelected(MenuItem item) {
+        Log.i(TAG, "called onOptionsItemSelected; selected item: " + item);
+        if (item.getGroupId() == 1)
+        {
+            mOpenCvCameraView.setEffect((String) item.getTitle());
+            Toast.makeText(this, mOpenCvCameraView.getEffect(), Toast.LENGTH_SHORT).show();
+        }
+        else if (item.getGroupId() == 2)
+        {
+            int id = item.getItemId();
+            Size resolution = mResolutionList.get(id);
+            mOpenCvCameraView.setResolution(resolution);
+            resolution = mOpenCvCameraView.getResolution();
+            String caption = Integer.valueOf(resolution.width).toString() + "x" + Integer.valueOf(resolution.height).toString();
+            Toast.makeText(this, caption, Toast.LENGTH_SHORT).show();
+        }
+
+        return true;
+    }
+
+    @SuppressLint("SimpleDateFormat")
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        Log.i(TAG,"onTouch event");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
+        String currentDateandTime = sdf.format(new Date());
+        String fileName = Environment.getExternalStorageDirectory().getPath() +
+                "/sample_picture_" + currentDateandTime + ".jpg";
+        mOpenCvCameraView.takePicture(fileName);
+        Toast.makeText(this, fileName + " saved", Toast.LENGTH_SHORT).show();
+        return false;
+    }
 }
+
 //public class MainActivity extends AppCompatActivity {
 //
 //    @Override
