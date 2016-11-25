@@ -1,6 +1,7 @@
 package com.example.hilda.cameraapp;
 
 import java.io.FileOutputStream;
+import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -8,7 +9,6 @@ import java.util.ListIterator;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
@@ -16,16 +16,16 @@ import org.opencv.core.Core;
 import org.opencv.core.CvException;
 import org.opencv.core.Mat;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
-import org.opencv.imgproc.Imgproc;
-import org.opencv.video.Video;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.hardware.Camera.Size;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Parcelable;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -56,7 +56,11 @@ public class MainActivity extends Activity implements CvCameraViewListener2, OnT
     private Button mCaptureButton;
 
     private BgdSubtractor bgdSubtractor=new BgdSubtractor();
-    private Mat frame=new Mat();
+    public static Mat capturedFrame=new Mat();
+
+    private Mat inFrame =new Mat();
+
+    private Mat outFrame=new Mat();
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -104,6 +108,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2, OnT
                 mOpenCvCameraView.takePicture(fileName);
                 Toast.makeText(mActivity, fileName + " saved", Toast.LENGTH_SHORT).show();
 //                return false;
+
+                capturedFrame=inFrame.clone();
+                direct2DisplayActivity();
             }
         });
 
@@ -112,6 +119,20 @@ public class MainActivity extends Activity implements CvCameraViewListener2, OnT
         mOpenCvCameraView.setCvCameraViewListener(this);
 
         bgdSubtractor.setBackground(imgId2Mat(R.drawable.background));
+    }
+
+    public void direct2DisplayActivity()
+    {
+        // In parent activity
+
+        //Mat inFrameCopy=inFrame.clone();
+
+        Intent i = new Intent();
+        //Bundle b = new Bundle();
+        //b.putParcelable("myImg", (Parcelable) inFrameCopy);
+        //i.putExtras(b);
+        i.setClass(this, DisplayActivity.class);
+        startActivity(i);
     }
 
     @Override
@@ -154,10 +175,10 @@ public class MainActivity extends Activity implements CvCameraViewListener2, OnT
 
         if(inputFrame.rgba().empty()) return inputFrame.rgba();
 
-        Core.flip(inputFrame.rgba(),frame,0);
+        Core.flip(inputFrame.rgba(), inFrame,0);
 
-        bgdSubtractor.setInput(frame);
-        Mat outFrame = bgdSubtractor.getBlendImage();
+        bgdSubtractor.setInput(inFrame);
+        outFrame = bgdSubtractor.getBlendImage();
 
         //Mat outFrame = bgdSubtractor.getBackground();
         System.gc();
