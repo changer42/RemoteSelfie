@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/menu_action_effiel"
+        android:orderInCategory="100"
+        android:title="@string/menu_action_effiel"
+        android:showAsAction="always"
+        tools:ignore="AppCompatResource" />
+
+    <item
+        android:id="@+id/menu_action_pyramid"
+        android:orderInCategory="101"
+        android:title="@string/menu_action_pyramid"
+        android:showAsAction="always"
+        tools:ignore="AppCompatResource" />
+
+
+    <item
+        android:id="@+id/menu_action_liberty"
+        android:orderInCategory="102"
+        android:title="@string/menu_action_statue_of_liberty"
+        android:showAsAction="always"
+        tools:ignore="AppCompatResource" />
+
+
+    <item
+        android:id="@+id/menu_action_hogwartz"
+        android:orderInCategory="103"
+        android:title="@string/menu_action_hogwartz"
+        android:showAsAction="always"
+        tools:ignore="AppCompatResource" />
+
+    <item
+        android:id="@+id/menu_action_hp"
+        android:orderInCategory="104"
+        android:title="@string/menu_action_hp"
+        android:showAsAction="always"
+        tools:ignore="AppCompatResource" />
+
+    <item
+        android:id="@+id/menu_action_empire"
+        android:orderInCategory="105"
+        android:title="@string/menu_action_empire"
+        android:showAsAction="always"
+        tools:ignore="AppCompatResource" />
+
+    <item
+        android:id="@+id/menu_action_london"
+        android:orderInCategory="106"
+        android:title="@string/menu_action_london"
+        android:showAsAction="always"
+        tools:ignore="AppCompatResource" />
+
+
+</menu>

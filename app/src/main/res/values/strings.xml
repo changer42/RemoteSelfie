@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">CameraApp</string>
+    <string name="menu_action_bg">background</string>
+    <string name="menu_action_fg">foreground</string>
+    <string name="menu_action_process">process</string>
+    <string name="menu_action_hogwartz">Hogwartz</string>
+    <string name="menu_action_statue_of_liberty">Statue of Liberty</string>
+    <string name="menu_action_pyramid">pyramid</string>
+    <string name="menu_action_effiel">effiel</string>
+    <string name="menu_action_hp">harry potter</string>
+    <string name="menu_action_empire">Empire State Building</string>
+    <string name="menu_action_london">Big Ben</string>
 </resources>

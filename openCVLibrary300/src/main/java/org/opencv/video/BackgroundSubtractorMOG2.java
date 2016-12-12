@@ -10,7 +10,7 @@ package org.opencv.video;
 //javadoc: BackgroundSubtractorMOG2
 public class BackgroundSubtractorMOG2 extends BackgroundSubtractor {
 
-    protected BackgroundSubtractorMOG2(long addr) { super(addr); }
+    public BackgroundSubtractorMOG2(long addr) { super(addr); }
 
 
     //

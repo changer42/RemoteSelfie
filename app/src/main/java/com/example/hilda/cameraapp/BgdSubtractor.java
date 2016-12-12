@@ -2,6 +2,7 @@ package com.example.hilda.cameraapp;
 
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -12,11 +13,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.opencv.core.Core.bitwise_not;
 import static org.opencv.core.Core.merge;
 import static org.opencv.core.Core.split;
 import static org.opencv.imgproc.Imgproc.COLOR_BGR2GRAY;
 import static org.opencv.imgproc.Imgproc.COLOR_BGRA2BGR;
+import static org.opencv.imgproc.Imgproc.RETR_CCOMP;
 import static org.opencv.imgproc.Imgproc.THRESH_BINARY;
+import static org.opencv.imgproc.Imgproc.findContours;
+import static org.opencv.imgproc.Imgproc.medianBlur;
 
 /**
  * Created by Johnny on 11/22/2016.
@@ -25,10 +30,12 @@ import static org.opencv.imgproc.Imgproc.THRESH_BINARY;
 public class BgdSubtractor {
 
     private BackgroundSubtractorMOG2 bgs;
+    private double learningRate=0;
+    private String method="median filter";
+
     private Mat fgMask =new Mat();
     private Mat output=new Mat();
     private Mat input=new Mat();
-
     private Mat background =new Mat();
     private Mat backgroundSeg=new Mat();
 
@@ -37,11 +44,68 @@ public class BgdSubtractor {
     Mat mask=new Mat();
     Mat colorMask=new Mat();
     Mat res=new Mat();
+    private Mat processedInput =new Mat();
+    private Mat kernel=new Mat();
+    private Mat alteredMask=new Mat();
+    private List<MatOfPoint> contours=new ArrayList<>();
+    private Mat hierarchy=new Mat();
 
     public BgdSubtractor()
     {
-        bgs= Video.createBackgroundSubtractorMOG2();
+        initParameter();initMoG2();
     }
+
+    public BgdSubtractor(double learningRate)
+    {
+        this.learningRate=learningRate;initParameter();initMoG2();
+    }
+
+    public BgdSubtractor(String method)
+    {
+        this.method=method;initParameter();initMoG2();
+    }
+
+    public BgdSubtractor(double learningRate,String method)
+    {
+        this.method=method;
+        this.learningRate=learningRate;
+    }
+
+    public void initParameter()
+    {
+        learningRate=0;
+        method="median filter";
+
+        fgMask =new Mat();
+        output=new Mat();
+        input=new Mat();
+        background =new Mat();
+        backgroundSeg=new Mat();
+
+        b=new Mat();g=new Mat();r=new Mat();
+        bgr=new ArrayList<>();
+        mask=new Mat();
+        colorMask=new Mat();
+        res=new Mat();
+        processedInput =new Mat();
+        kernel=new Mat();
+        alteredMask=new Mat();
+        contours=new ArrayList<>();
+        hierarchy=new Mat();
+
+    }
+
+    public void initMoG2()
+    {
+        bgs=Video.createBackgroundSubtractorMOG2();
+    }
+
+
+    public void initMoG2(int history, double varThreshold, boolean bShadowDetection)
+    {
+        bgs=Video.createBackgroundSubtractorMOG2(history,varThreshold,bShadowDetection);
+    }
+
 
     public Mat getBlendImage()
     {
@@ -72,15 +136,86 @@ public class BgdSubtractor {
         return output;
     }
 
+    private void fillHoles()
+    {
+        Imgproc.cvtColor(mask, alteredMask, Imgproc.COLOR_BGR2GRAY);
+
+        Imgproc.Canny(alteredMask, alteredMask, 50, 200);
+        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        Mat hierarchy = new Mat();
+// find contours:
+        Imgproc.findContours(alteredMask, contours, hierarchy, Imgproc.RETR_TREE,Imgproc.CHAIN_APPROX_SIMPLE);
+        for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
+            Imgproc.drawContours(alteredMask, contours, contourIdx, new Scalar(0, 0, 255), -1);
+        }
+
+        Imgproc.cvtColor(alteredMask, mask, Imgproc.COLOR_GRAY2BGR);
+//
+//        Imgproc.cvtColor(mask, alteredMask, Imgproc.COLOR_BGR2GRAY);
+//        bitwise_not(alteredMask, alteredMask);
+//        findContours(alteredMask, contours, hierarchy,RETR_CCOMP,Imgproc.CHAIN_APPROX_SIMPLE);
+//
+//        for (int idx = 0; idx < contours.size(); idx++) {
+//            Imgproc.drawContours(alteredMask,contours,idx,new Scalar(0));
+//        }
+//
+//        bitwise_not(alteredMask,alteredMask);
+//        Imgproc.cvtColor(alteredMask, mask, Imgproc.COLOR_GRAY2BGR);
+
+    }
+
+
+    public Mat fillHoles(Mat mask)
+    {
+
+        Imgproc.cvtColor(mask, alteredMask, Imgproc.COLOR_BGR2GRAY);
+
+        Imgproc.Canny(alteredMask, alteredMask, 50, 200);
+        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        Mat hierarchy = new Mat();
+// find contours:
+        Imgproc.findContours(alteredMask, contours, hierarchy, Imgproc.RETR_TREE,Imgproc.CHAIN_APPROX_SIMPLE);
+        for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
+            Imgproc.drawContours(alteredMask, contours, contourIdx, new Scalar(0, 0, 255), -1);
+        }
+
+        Imgproc.cvtColor(alteredMask, mask, Imgproc.COLOR_GRAY2BGR);
+
+        return mask;
+
+//        Imgproc.cvtColor(mask, alteredMask, Imgproc.COLOR_BGR2GRAY);
+//        bitwise_not(alteredMask, alteredMask);
+//        findContours(alteredMask, contours, hierarchy,RETR_CCOMP,Imgproc.CHAIN_APPROX_SIMPLE);
+//
+//        for (int idx = 0; idx < contours.size(); idx++) {
+//            Imgproc.drawContours(alteredMask,contours,idx,new Scalar(255),);
+//        }
+//
+//        bitwise_not(alteredMask,alteredMask);
+//        Imgproc.cvtColor(alteredMask, mask, Imgproc.COLOR_GRAY2BGR);
+//
+//        return mask;
+    }
+
     public Mat getThresholdMask()
     {
-        bgs.apply(input, fgMask);
+        if(method.equals("median filter")) medianBlur(input, processedInput,7);
+        else processedInput=input;
+
+        if(learningRate==0) bgs.apply(processedInput,fgMask);
+        else bgs.apply(processedInput, fgMask, learningRate);
 
         //Mat mask=new Mat();
         Imgproc.threshold(fgMask, mask, 35, 255, Imgproc.THRESH_BINARY_INV);
 
-        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
-        Imgproc.morphologyEx(mask, mask, Imgproc.MORPH_OPEN, kernel);
+        if(method.equals("median filter")) medianBlur(mask,mask,11);
+        else
+        {
+            kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
+            Imgproc.morphologyEx(mask, mask, Imgproc.MORPH_OPEN, kernel);
+        }
+
+        //fillHoles();
 
         Imgproc.cvtColor(mask, mask, Imgproc.COLOR_GRAY2BGR);
 
@@ -94,6 +229,15 @@ public class BgdSubtractor {
         //Mat output=new Mat();
         Core.subtract(input,mask,colorMask);
 
+        return colorMask;
+    }
+
+    public Mat getColorMask2()
+    {
+        Mat mask = getThresholdMask();
+
+        //Mat output=new Mat();
+        Core.subtract(input,mask,colorMask);
         return colorMask;
     }
 

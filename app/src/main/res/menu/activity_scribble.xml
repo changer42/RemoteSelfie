@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/menu_action_bg"
+        android:orderInCategory="100"
+        android:title="@string/menu_action_bg"
+        android:showAsAction="always"
+        tools:ignore="AppCompatResource" />
+
+    <item
+        android:id="@+id/menu_action_fg"
+        android:orderInCategory="101"
+        android:title="@string/menu_action_fg"
+        android:showAsAction="always"
+        tools:ignore="AppCompatResource" />
+
+
+    <item
+        android:id="@+id/menu_action_process"
+        android:orderInCategory="102"
+        android:title="@string/menu_action_process"
+        android:showAsAction="always"
+        tools:ignore="AppCompatResource" />
+
+</menu>

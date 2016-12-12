@@ -1,7 +1,6 @@
 package com.example.hilda.cameraapp;
 
 import java.io.FileOutputStream;
-import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -25,7 +24,7 @@ import android.graphics.BitmapFactory;
 import android.hardware.Camera.Size;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Parcelable;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -38,7 +37,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.Toast;
 
-public class MainActivity extends Activity implements CvCameraViewListener2, OnTouchListener {
+public class MainActivity extends AppCompatActivity implements CvCameraViewListener2, OnTouchListener {
 
     private static final String TAG = "MainActivity";
     public static final String LOG_TAG = "MainActivity";
@@ -55,11 +54,14 @@ public class MainActivity extends Activity implements CvCameraViewListener2, OnT
     private SubMenu mResolutionMenu;
     private Button mCaptureButton;
 
-    private BgdSubtractor bgdSubtractor=new BgdSubtractor();
-    public static Mat capturedFrame=new Mat();
+    private BgdSubtractor bgdSubtractor;
+
+    public static Mat capturedOutFrame =new Mat();
+    public static Mat capturedInFrame=new Mat();
+    public static Mat capturedBackground=new Mat();
+
 
     private Mat inFrame =new Mat();
-
     private Mat outFrame=new Mat();
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
@@ -109,7 +111,10 @@ public class MainActivity extends Activity implements CvCameraViewListener2, OnT
                 Toast.makeText(mActivity, fileName + " saved", Toast.LENGTH_SHORT).show();
 //                return false;
 
-                capturedFrame=inFrame.clone();
+                capturedOutFrame =getRotatedMat(outFrame.clone(),270);
+                capturedInFrame = getRotatedMat(inFrame.clone(),270);
+                capturedBackground = getRotatedMat(bgdSubtractor.getBackground().clone(),270);
+
                 direct2DisplayActivity();
             }
         });
@@ -118,8 +123,25 @@ public class MainActivity extends Activity implements CvCameraViewListener2, OnT
 
         mOpenCvCameraView.setCvCameraViewListener(this);
 
-        bgdSubtractor.setBackground(imgId2Mat(R.drawable.background));
+        initBgd(R.drawable.background);
     }
+
+    private void initBgd(int imgId)
+    {
+        bgdSubtractor=new BgdSubtractor("Morph");
+        //bgdSubtractor.initMoG2(500,16,true);
+        bgdSubtractor.setBackground(imgId2Mat(imgId));
+    }
+
+    private void initBgd(int imgId,int degree)
+    {
+        bgdSubtractor=new BgdSubtractor("Morph");
+        //bgdSubtractor.initMoG2(500,16,true);
+
+        Mat temp=imgId2Mat(imgId);
+        bgdSubtractor.setBackground(getRotatedMat(temp,degree));
+    }
+
 
     public void direct2DisplayActivity()
     {
@@ -131,7 +153,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, OnT
         //Bundle b = new Bundle();
         //b.putParcelable("myImg", (Parcelable) inFrameCopy);
         //i.putExtras(b);
-        i.setClass(this, DisplayActivity.class);
+        i.setClass(this, ScribbleActivity.class);
         startActivity(i);
     }
 
@@ -156,6 +178,25 @@ public class MainActivity extends Activity implements CvCameraViewListener2, OnT
         }
     }
 
+    public Mat getRotatedMat(Mat src, int mCameraOrientation)
+    {
+        Mat dst=new Mat();
+        if (mCameraOrientation == 270) {
+            // Rotate clockwise 270 degrees
+            Core.flip(src.t(), dst, 0);
+        } else if (mCameraOrientation == 180) {
+            // Rotate clockwise 180 degrees
+            Core.flip(src, dst, -1);
+        } else if (mCameraOrientation == 90) {
+            // Rotate clockwise 90 degrees
+            Core.flip(src.t(), dst, 1);
+        } else if (mCameraOrientation == 0) {
+            // No rotation
+            dst = src;
+        }
+        return dst;
+    }
+
     public void onDestroy() {
         super.onDestroy();
         if (mOpenCvCameraView != null)
@@ -173,7 +214,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2, OnT
 
         //checkFrameCount();
 
-        if(inputFrame.rgba().empty()) return inputFrame.rgba();
+        if(bgdSubtractor.getBackground().empty() ||
+                inputFrame.rgba().empty()) return inputFrame.rgba();
+
 
         Core.flip(inputFrame.rgba(), inFrame,0);
 
@@ -251,6 +294,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2, OnT
             idx++;
         }
 
+        getMenuInflater().inflate(R.menu.activity_main,menu);
+
         return true;
     }
 
@@ -269,6 +314,34 @@ public class MainActivity extends Activity implements CvCameraViewListener2, OnT
             resolution = mOpenCvCameraView.getResolution();
             String caption = Integer.valueOf(resolution.width).toString() + "x" + Integer.valueOf(resolution.height).toString();
             Toast.makeText(this, caption, Toast.LENGTH_SHORT).show();
+        }
+
+        int id=item.getItemId();
+        switch (id)
+        {
+            case R.id.menu_action_effiel:
+                initBgd(R.drawable.effiel,90);
+                break;
+            case R.id.menu_action_pyramid:
+                initBgd(R.drawable.pyramid);
+                break;
+            case R.id.menu_action_liberty:
+                initBgd(R.drawable.liberty,90);
+                break;
+            case R.id.menu_action_hogwartz:
+                initBgd(R.drawable.hogwartz2);
+                break;
+            case R.id.menu_action_empire:
+                initBgd(R.drawable.empire);
+                break;
+            case R.id.menu_action_hp:
+                initBgd(R.drawable.hp);
+                break;
+            case R.id.menu_action_london:
+                initBgd(R.drawable.london,90);
+                break;
+            default:
+                break;
         }
 
         return true;

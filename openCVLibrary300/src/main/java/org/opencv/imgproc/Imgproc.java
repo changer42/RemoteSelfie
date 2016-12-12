@@ -20,8 +20,54 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.core.TermCriteria;
 import org.opencv.utils.Converters;
+import java.lang.Math;
+
 
 public class Imgproc {
+
+
+    //
+    // C++:  Moments moments(Mat array, bool binaryImage = false)
+    //
+
+    //javadoc: moments(array, binaryImage)
+    public static Moments moments(Mat array, boolean binaryImage)
+    {
+
+        Moments retVal = new Moments(moments_0(array.nativeObj, binaryImage));
+
+        return retVal;
+    }
+
+    //javadoc: moments(array)
+    public static Moments moments(Mat array)
+    {
+
+        Moments retVal = new Moments(moments_1(array.nativeObj));
+
+        return retVal;
+    }
+
+    //
+    // C++:  void HuMoments(Moments m, Mat& hu)
+    //
+
+    //javadoc: HuMoments(m, hu)
+    public static void HuMoments(Moments m, Mat hu)
+    {
+
+        HuMoments_0(m.m00, m.m10, m.m01, m.m20, m.m11, m.m02, m.m30, m.m21, m.m12, m.m03, hu.nativeObj);
+
+        return;
+    }
+
+    // C++:  Moments moments(Mat array, bool binaryImage = false)
+    private static native double[] moments_0(long array_nativeObj, boolean binaryImage);
+    private static native double[] moments_1(long array_nativeObj);
+
+    // C++:  void HuMoments(Moments m, Mat& hu)
+    private static native void HuMoments_0(double m_m00, double m_m10, double m_m01, double m_m20, double m_m11, double m_m02, double m_m30, double m_m21, double m_m12, double m_m03, long hu_nativeObj);
+
 
     private static final int
             IPL_BORDER_CONSTANT = 0,
